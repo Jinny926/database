@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static sun.security.pkcs11.wrapper.Functions.getId;
+
 @RestController
 @RequestMapping("api/memos")
 public class MemoController {
@@ -35,11 +37,24 @@ public class MemoController {
     }
 
     @GetMapping()
-    public List<MemoResponseDto> getMemos(){
+    public List<MemoResponseDto> getMemos() {
         // (임시) Map -> List
-        List<MemoResponseDto> memoResponseDtoList=memoList.values().stream()
+        List<MemoResponseDto> memoResponseDtoList = memoList.values().stream()
                 .map(MemoResponseDto::new).toList();
         return memoResponseDtoList;
     }
 
+    @PutMapping("{id}")
+    public Long updateMemo(@PathVariable Long id, @RequestBody MemoRequestDto memoRequestDto){
+         // 해당 id의 메모가 데이터베이스에 존재하는지 확인
+        if(memoList.containsKey(id)){
+            // true면, 해당 메모 가져오기
+            Memo foundMemo = memoList.get(id);
+            foundMemo.update(memoRequestDto);
+
+            return foundMemo.getId();
+        } else{
+            throw new IllegalArgumentException("선택한 id의 메모는 존재하지 않습니다.");
+        }
+    }
 }
