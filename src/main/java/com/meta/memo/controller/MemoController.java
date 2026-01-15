@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static sun.security.pkcs11.wrapper.Functions.getId;
 
 @RestController
 @RequestMapping("api/memos")
