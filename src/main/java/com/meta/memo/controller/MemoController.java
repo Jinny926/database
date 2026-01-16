@@ -3,38 +3,53 @@ package com.meta.memo.controller;
 import com.meta.memo.domain.Memo;
 import com.meta.memo.dto.MemoRequestDto;
 import com.meta.memo.dto.MemoResponseDto;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.PreparedStatement;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 
 @RestController
 @RequestMapping("api/memos")
 public class MemoController {
-    // 임시 데이터베이스(내장 메모리 배열)
-    private final Map<Long, Memo> memoList = new HashMap<>();
+    // JDBC를 통한 MySQL 연결
+    private final JdbcTemplate jdbcTemplate;
+
+    public MemoController(JdbcTemplate jdbcTemplate){
+        this.jdbcTemplate=jdbcTemplate;
+    }
 
     @PostMapping
     public MemoResponseDto creatMemo(@RequestBody MemoRequestDto memoRequestDto){
         // RequestDto -> Entity 변환
         Memo newMemo= new Memo(memoRequestDto);
 
-        //( 임시) 현재 Memo들의 최대 id를 체크하고 마지막 id를 부여
-        Long maxId=memoList.size()>0? Collections.max(memoList.keySet())+1:1;
-        newMemo.setId(maxId);
-
         // DB 저장
-        memoList.put(newMemo.getId(), newMemo);
+        KeyHolder keyHolder = new GeneratedKeyHolder(); // 기본 키를 반환 받기 위한 객체
+
+        String sql = "INSERT INTO memo (username, contents) VALUES(?,?)";
+        jdbcTemplate.update(con -> {
+            PreparedStatement preparedStatement = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            preparedStatement.setString(1,newMemo.getUsername());
+            preparedStatement.setString(2,newMemo.getContents());
+            return preparedStatement;
+        },keyHolder);
+
+        // DB INSERT 후 받아온 키 확인
+        Long id = keyHolder.getKey().longValue();
+        newMemo.setId(id);
 
         // Entity -> ResponseDto 변환
         MemoResponseDto memoResponseDto=new MemoResponseDto(newMemo);
 
         return null;
     }
-
+/*
     @GetMapping()
     public List<MemoResponseDto> getMemos() {
         // (임시) Map -> List
@@ -67,5 +82,9 @@ public class MemoController {
         }else{
             throw new IllegalArgumentException("선택한 id의 메모는 존재하지 않습니다.");
         }
+
+
     }
+
+ */
 }
