@@ -3,6 +3,7 @@ package com.meta.memo.service;
 import com.meta.memo.domain.Memo;
 import com.meta.memo.dto.MemoRequestDto;
 import com.meta.memo.dto.MemoResponseDto;
+import com.meta.memo.repository.MemoRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -26,41 +27,19 @@ public class MemoService {
         // RequestDto -> Entity 변환
         Memo newMemo= new Memo(memoRequestDto);
 
-        // DB 저장
-        KeyHolder keyHolder = new GeneratedKeyHolder(); // 기본 키를 반환 받기 위한 객체
-
-        String sql = "INSERT INTO memo (username, contents) VALUES(?,?)";
-        jdbcTemplate.update(con -> {
-            PreparedStatement preparedStatement = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1,newMemo.getUsername());
-            preparedStatement.setString(2,newMemo.getContents());
-            return preparedStatement;
-        },keyHolder);
-
-        // DB INSERT 후 받아온 키 확인
-        Long id = keyHolder.getKey().longValue();
-        newMemo.setId(id);
+        MemoRepository memoRepository = new MemoRepository(jdbcTemplate);
+        Memo saveMemo = memoRepository.save(newMemo);
 
         // Entity -> ResponseDto 변환
-        MemoResponseDto memoResponseDto=new MemoResponseDto(newMemo);
+        MemoResponseDto memoResponseDto=new MemoResponseDto(saveMemo);
 
         return null;
     }
 
 
     public List<MemoResponseDto> getMemos() {
-        // DB 조회
-        String sql ="SELECT * FROM memo";
-
-        List<MemoResponseDto> memoResponseDtoList = jdbcTemplate.query(sql, new RowMapper<MemoResponseDto>() {
-            @Override
-            public MemoResponseDto mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Long id = rs.getLong("id");
-                String username = rs.getString("username");
-                String contents = rs.getString("contents");
-                return new MemoResponseDto(id, username, contents);
-            }
-        });
+       MemoRepository memoRepository = new MemoRepository(jdbcTemplate);
+       List<MemoResponseDto> memoResponseDtoList = memoRepository.findAll();
         return memoResponseDtoList;
     }
 
