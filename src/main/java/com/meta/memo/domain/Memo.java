@@ -1,26 +1,38 @@
 package com.meta.memo.domain;
 
 import com.meta.memo.dto.MemoRequestDto;
+import com.meta.memo.dto.MemoResponseDto;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class Memo {
+@Table(name = "memo")
+@Entity
+public class Memo extends TimeStamped {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "username", nullable = false)
     private String username;
+
+    @Column (name = "contents" , nullable = false, length = 500)
     private String contents;
 
     public Memo(MemoRequestDto memoRequestDto){
-        this.username=memoRequestDto.getUsername();
-        this.contents=memoRequestDto.getContents();
+        this.username = memoRequestDto.getUsername();
+        this.contents = memoRequestDto.getContents();
     }
 
+
     public void update(MemoRequestDto memoRequestDto){
-        this.username=memoRequestDto.getUsername();
-        this.contents=memoRequestDto.getContents();
+        this.username = memoRequestDto.getUsername();
+        this.contents = memoRequestDto.getContents();
     }
 
 }
