@@ -254,26 +254,88 @@
             getMessages();
         })
 
+        // 3단계 : 기존 getMessgaes()를 renderMessages로 리팩토링 여기도 고침
         // 메모를 불러와서 보여줍니다.
         function getMessages() {
-            // 1. 기존 메모 내용을 지웁니다.
-            $('#cards-box').empty();
-            // 2. 메모 목록을 불러와서 HTML로 붙입니다.
             $.ajax({
                 type: 'GET',
                 url: '/api/memos',
                 success: function (response) {
-                    for (let i = 0; i < response.length; i++) {
-                        let message = response[i];
-                        let id = message['id'];
-                        let username = message['username'];
-                        let contents = message['contents'];
-                        let modifiedAt = message['modifiedAt'];
-                        addHTML(id, username, contents, modifiedAt);
-                    }
+                    renderMessages(response);
                 }
             })
         }
+
+        // 2단계 : 렌더링(화면 목록 그리기)를 공통함수로 만들기
+        function renderMessages(list) {
+            $('#cards-box').empty();
+
+            if (!list || list.length === 0) {
+                $('#cards-box').append(`
+                    <div class="card">
+                        <div class="contents" style="padding:20px;">검색 결과가 없습니다.</div>
+                    </div>
+                `);
+                return;
+            }
+
+            for (let i = 0; i < list.length; i++) {
+                const message = list[i];
+                addHTML(message.id, message.username, message.contents, message.modifiedAt);
+            }
+        }
+
+        // 4단계 : 검색 버튼 로직 만들기
+        function searchButtonClicked() {
+            const keyword = $('#search-keyword').val().trim();
+
+            if (keyword === '') {
+                alert('검색어를 입력해주세요!');
+                return;
+            }
+
+            // 검색 모드 UI: back 버튼 보여주기
+            $('#back-to-list-btn').show();
+
+            // 검색 실행
+            searchMessages(keyword);
+        }
+
+        // 5단계 : 검색 Ajax 요청 만들기 (정석 + 임시 대안 같이)
+        function searchMessages(keyword) {
+            // 1) 정석: 서버 검색 API 호출 시도
+            $.ajax({
+                type: 'GET',
+                url: `/api/memos/search?keyword=${encodeURIComponent(keyword)}`,
+                success: function (response) {
+                    renderMessages(response);
+                },
+                error: function () {
+                    // 2) 임시 대안: 전체 목록 받아서 프론트에서 필터링
+                    $.ajax({
+                        type: 'GET',
+                        url: '/api/memos',
+                        success: function (response) {
+                            const filtered = response.filter(m =>
+                                (m.contents && m.contents.includes(keyword)) ||
+                                (m.username && m.username.includes(keyword))
+                            );
+                            renderMessages(filtered);
+                        }
+                    });
+                }
+            });
+        }
+
+        // 6단계 : Back to list 버튼 로직 만들기
+        function backToList() {
+            $('#search-keyword').val('');
+            $('#back-to-list-btn').hide();
+            getMessages(); // 전체 목록 다시 불러오기
+        }
+
+
+
 
         // 메모 하나를 HTML로 만들어서 body 태그 내 원하는 곳에 붙입니다.
         function addHTML(id, username, contents, modifiedAt) {
@@ -398,6 +460,23 @@
         <!--            <button class="btn btn-danger" onclick="writePost()">작성하기</button>-->
         <img src="images/send.png" alt="" onclick="writePost()">
     </div>
+
+    <!--1단계 : 검색 UI를 HTML에 추가하기 (내가 추가한 검색어 입력창과 검색 실행 그리고 Back to list) -->
+    <div class="area-search" style="margin-top:12px; display:flex; gap:8px;">
+        <input id="search-keyword" type="text" placeholder="검색어 입력"
+               style="flex:1; padding:10px; border-radius:5px; border:1px solid #ced4da;">
+
+        <button type="button" onclick="searchButtonClicked()"
+                style="padding:10px 12px; border-radius:5px; border:none; cursor:pointer;">
+            Search
+        </button>
+
+        <button id="back-to-list-btn" type="button" onclick="backToList()"
+                style="padding:10px 12px; border-radius:5px; border:none; cursor:pointer; display:none;">
+            Back to list
+        </button>
+    </div>
+
     <div id="cards-box" class="area-read">
         <div class="card">
             <!-- date/username 영역 -->

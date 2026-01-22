@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.transaction.annotation.Propagation;
 
 @SpringBootTest
 public class TransactionTest {
@@ -23,7 +22,7 @@ public class TransactionTest {
 
     @Test
     @DisplayName("메모 생성 성공 확인")
-    @Transactional(Propagation = Propagation.Re)
+    @Transactional
     @Rollback(false)
     void test1(){
         Memo memo = new Memo();
@@ -42,14 +41,5 @@ public class TransactionTest {
 
         em.persist(memo);
     }
-
-    @Test
-    @org.springframework.transaction.annotation.Transactional
-    @Rollback(value = false)
-    @DisplayName("트랜잭션 전파")
-    void test3(){
-        memoRepository.save(em);
-    }
 }
-
 
